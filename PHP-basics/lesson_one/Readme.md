@@ -8,11 +8,10 @@ In this mode, we will not be able to serve requests from the browser, but we can
 
 To start, we will create a new file in our code editor, which we will call start.php the following content:
 
-'''
-
+```php
 <?php
 echo "Hello, World!";
-'''
+```
 
 <?php -> This is a PHP script. It is a file that contains PHP code.?>
 
@@ -25,9 +24,9 @@ The result of the script will be: Hello, World!
 In the directory of our project, we will create a php-cli folder where we will place the script code
 start.php . Let's run the code in the container with the following command:
 
-'''
+```Terminal
 docker run --rm -v ${pwd}/php-cli/:/cli php:8.2-cli php /cli/start.php
-'''
+```
 
 Don't forget that VSCode must be run as an administrator.
 
@@ -76,11 +75,9 @@ The interpreter will no longer be a cli container, but a special handler that in
 
 FastCGI (Fast Common Gateway Interface) is an interaction protocol between a web server and web applications that allows the server to access external processes running scripts on the server and receive responses from them.
 
-FastCGI provides a structured exchange of data and commands between the web server and an external process in the format of records, which can contain various types of data such as request parameters,
-environment variables, request data, etc. The protocol also provides mechanisms for managing the state of the FastCGI process, such as managing process pools, restarting processes, etc. etc.
+FastCGI provides a structured exchange of data and commands between the web server and an external process in the format of records, which can contain various types of data such as request parameters, environment variables, request data, etc. The protocol also provides mechanisms for managing the state of the FastCGI process, such as managing process pools, restarting processes, etc. etc.
 
-PHP-FPM (PHP FastCGI Process Manager) is a PHP component that provides a FastCGI implementation for PHP scripts. It is a separate process that executes PHP scripts and interacts with the web server
-via the FastCGI protocol. PHP-FPM offers a number of options for configuring and managing PHP processes, such as managing PHP process pools, regulating the number of PHP workflows, and managing resources.
+PHP-FPM (PHP FastCGI Process Manager) is a PHP component that provides a FastCGI implementation for PHP scripts. It is a separate process that executes PHP scripts and interacts with the web server via the FastCGI protocol. PHP-FPM offers a number of options for configuring and managing PHP processes, such as managing PHP process pools, regulating the number of PHP workflows, and managing resources.
 
 Using PHP-FPM, you can manage and configure the operation of PHP processes by setting parameters such as:
 
@@ -96,8 +93,7 @@ We will create a [docker-compose.yml](./php-fpm/docker-compose.yaml) file in the
 
 We will build a site responding to the name mysite.local.
 
-Of course, there is no such domain on the global network, so we need to add the appropriate entry to the hosts file – this is a local file on the computer that is used to map IP addresses and domain
-names. The location of the hosts file may differ on different operating systems.
+Of course, there is no such domain on the global network, so we need to add the appropriate entry to the hosts file – this is a local file on the computer that is used to map IP addresses and domain names. The location of the hosts file may differ on different operating systems.
 
 Here is the location of the hosts file in some popular operating systems:
 
@@ -109,9 +105,9 @@ Here is the location of the hosts file in some popular operating systems:
 
 Let's add an entry to the end of this file:
 
-'''
+```
 127.0.0.1 mysite.local
-'''
+```
 
 If we look closely at docker-compose, we will see that we will need to create three additional folders:
 
@@ -122,7 +118,7 @@ If we look closely at docker-compose, we will see that we will need to create th
 Let's look at the Nginx. It contains instructions that tell how the web server should process
 a particular URL that the request came from.
 
-'''
+```
 server configuration {
 
     # specify the 80 port for
@@ -162,13 +158,13 @@ server configuration {
     }
 
 }
-'''
+```
 
 Now we can launch our containers with the command:
 
-'''
+```Terminal
 docker-compose up
-'''
+```
 
 If everything is done correctly, then in the browser at http://mysite.local we will see the contents of our website, which will display full information about which version of PHP we are using.
 
@@ -180,16 +176,16 @@ We have created a new directory with an example "Sample". We put the page templa
 
 Let's stop the current containers and delete them using the following commands:
 
-'''
+```Terminal
 docker stop $(docker ps -aq)
 docker rm $(docker ps -aq)
-'''
+```
 
 Now let's rebuild our containers and run the template:
 
-'''
+```Terminal
 docker-compose up
-'''
+```
 
 Open our template: http://mysite.local
 
@@ -210,14 +206,12 @@ Please note that it is bad form to place complex PHP logic directly in the layou
 Now let's add information about the name of our site and the current date to the site header.
 At the beginning of the file, add the following code:
 
-'''
-
+```php
 <?php
 $title = "<em>Geek</em>Brains";
 $today = date("d.m.Y");
 ?>
-
-'''
+```
 
 ![Date](./img/date.png)
 
@@ -230,9 +224,10 @@ This is followed by the variable name, which can consist of letters, numbers, an
 The assignment of a variable value is performed by the assignment operator (=).
 
 For example:
-'''
+
+```php
 $myVariable = "Hello World!";
-'''
+```
 
 We declare the title variable explicitly by manually specifying the string to be accessed.
 The today variable is generated using the date function built into PHP. This function outputs the date in the specified format. In our case, it will be the format "day.month. year".
@@ -253,24 +248,24 @@ Implicit type conversion occurs automatically when PHP tries to perform an opera
 
 For example, if a string variable, that is, a string, actually contains a number, PHP automatically converts it to a number to perform a mathematical operation.
 
-'''
+```php
 $number = 5;
 $string = "10";
 $sum = $number + $string; // result - 15
-'''
+```
 
 Explicit type conversion occurs when using special functions to cast variables to the desired type.
 For example, the intval() function converts a variable to an integer type.
 
-'''
+```php
 $float = 2.5;
 $int = intval($float); // $int = 2
-'''
+```
 
-'''
+```php
 $string = "5";
 $int = (int)$string; // $int = 5
-'''
+```
 
 You need to be prepared for automatic type conversion, since, for example, when converting float to int, the precision of the number is lost.
 
@@ -278,10 +273,10 @@ Therefore, think about what types your code will operate with.
 
 During debugging, the actual type of the variable can be seen by calling the var_dump function
 
-'''
+```php
 $float = 2.5;
 var_dump($float);
-'''
+```
 
 But please note that this is solely a debugging feature. And it has no place in the work system.
 
