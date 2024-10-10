@@ -54,7 +54,7 @@ Vasily Vasiliev, 05-06-1992
 
 And here loops come to our aid again. We will need a loop that will read the file line by line and look for matches in the date. To process a line, the explode function will come in handy, and to get the current date - date.
 
-Let's add a new function to the file [file.functions.php](./file.functions.php):
+Let's add a new function to the file [file.functions.php](./src/file.function.php):
 
 ```php
 function findBirthdaysToday(array $config): string
