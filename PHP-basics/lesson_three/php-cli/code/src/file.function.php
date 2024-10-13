@@ -26,8 +26,6 @@ function addFunction(array $config): string
 
     $name = readline("Enter your name: ");
     $date = readline("Please enter your date of birth in DD-MM-YYYY format: ");
-
-    // Валидация даты
     if (validate($date)) {
         $data = $name . ", " . $date . "\r\n";
 
