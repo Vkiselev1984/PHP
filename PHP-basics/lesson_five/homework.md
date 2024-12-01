@@ -14,7 +14,7 @@ Implement the functionality of saving the user in the storage. Saving will occur
 
 ## Including stylesheets
 
-We need to add links to CSS files in the [template](/code/src/Views/main.twig):
+We need to add links to CSS files in the [template](./code/src/Views/main.twig):
 
 ```
 <!DOCTYPE html>
