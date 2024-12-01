@@ -88,7 +88,7 @@ Now we connect these blocks in the main template:
 </html>
 ```
 
-In this case, we created a style folder in the root directory of the project in accordance with the server settings: [Style.css](/code/css/style.css).
+In this case, we created a style folder in the root directory of the project in accordance with the server settings: [Style.css](./code/css/style.css).
 
 ## Displaying the current time using TWIG
 
@@ -100,13 +100,13 @@ Let's use the date filter in TWIG to display the current time:
 
 ## Handling the error page
 
-Let's create a [ErrorController](/code/src/Controllers/ErrorController.php) to handle errors in the event of a missing method, the name of which is used in the browser address bar.
+Let's create a [ErrorController](./code/src/Controllers/ErrorController.php) to handle errors in the event of a missing method, the name of which is used in the browser address bar.
 
-The error404() method calls the render() method of the [Render class](/code/src/Render.php), passing it the name of the error.twig template and an array with a message variable containing the text "Page not found".
+The error404() method calls the render() method of the [Render class](./code/src/Render.php), passing it the name of the error.twig template and an array with a message variable containing the text "Page not found".
 
-Let's add a method to [Application](/code/src/Application.php) that will handle the error.
+Let's add a method to [Application](./code/src/Application.php) that will handle the error.
 
-Let's add a [template](/code/src/Views/error.twig) for displaying 404 errors.
+Let's add a [template](./code/src/Views/error.twig) for displaying 404 errors.
 
 If the user tries to call a non-existent method, an error template is shown:
 
@@ -126,4 +126,4 @@ UserController class:
 - The actionSave() method in the controller extracts the parameters from the GET request, checks if they are empty, and creates a new User object.
 - It then calls the save() method to save the user and returns an appropriate success or error message.
 
-![Get](/img/Get.png)
+![Get](./img/Get.png)
