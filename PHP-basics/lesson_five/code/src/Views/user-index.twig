@@ -1,0 +1,7 @@
+<p>List of users in storage</p>
+
+<ul id="navigation">
+{% for user in users %}
+<li>{{ user.getUserName() }}. Birthday: {{ user.getUserBirthday() | date('d.m.Y') }}</li>
+{% endfor %}
+</ul>

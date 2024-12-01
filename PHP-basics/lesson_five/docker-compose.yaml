@@ -1,0 +1,52 @@
+# syntax version
+version: '3'
+
+# in this block we describe the containers that will be launched
+services:
+  # container with Nginx
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    image: myapp/nginx
+    container_name: webserver
+    # port forwarding
+    ports:
+      - "80:80"
+    volumes:
+      - ./code:/data/mysite.local
+    networks:
+      - app-network
+
+  # Container with PHP-FPM, let's call it app
+  application:
+    # If there is no build section, the system will search for the image in the repositories
+    build:
+      context: ./fpm
+      dockerfile: Dockerfile
+    image: myapp/php # name of the future image
+    container_name: application # name of the container after launch
+    volumes:
+      - ./code:/data/mysite.local
+    # we can create an internal network for containers
+    networks:
+      - app-network
+
+  # Container with PHP-FPM, let's call it cli
+  cli:
+    # If there is no build section, the system will search for the image in the repositories
+    build:
+      context: ./cli
+      dockerfile: Dockerfile
+    image: myapp/php-cli # name of the future image
+    container_name: cli # name of the container after launch
+    volumes:
+      - ./code:/data/mysite.local
+    # we can create an internal network for containers
+    networks:
+      - app-network
+
+# Docker Networks
+networks:
+  app-network:
+    driver: bridge

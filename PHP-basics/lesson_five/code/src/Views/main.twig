@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>{{ title }}</title>
+        <link rel="stylesheet" href="/css/style.css">
+    </head>
+    <body>
+        {% include 'header.twig' %}
+        
+        <main>
+    
+        <div class="container">
+            {% if content_template_name is defined %}
+                {% include content_template_name %}
+            {% else %}
+                <p>Content not found.</p>
+            {% endif %}
+            <p>Текущее время: {{ "now"|date("H:i:s") }}</p>
+        </div>
+        <div class="sidebar">
+            {% include 'sidebar.twig' %}
+        </div>
+        </main>
+        
+        
+        
+        {% include 'footer.twig' %}
+    </body>
+</html>

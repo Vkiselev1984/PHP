@@ -1,0 +1,16 @@
+{
+    "name": "geekbrains/application1",
+    "autoload": {
+        "psr-4": {
+            "Geekbrains\\Application\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Kiselev"
+        }
+    ],
+    "require": {
+        "twig/twig": "^3.0"
+    }
+}
