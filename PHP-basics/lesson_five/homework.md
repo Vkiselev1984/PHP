@@ -29,6 +29,8 @@ We need to add links to CSS files in the [template](./code/src/Views/main.twig):
 </html>
 ```
 
+In this case, we created a style folder in the root directory of the project in accordance with the server settings: [Style.css](./code/css/style.css).
+
 ## Create Plugins
 
 We create three separate templates for the header, footer, and sidebar:
@@ -87,8 +89,6 @@ Now we connect these blocks in the main template:
     </body>
 </html>
 ```
-
-In this case, we created a style folder in the root directory of the project in accordance with the server settings: [Style.css](./code/css/style.css).
 
 ## Displaying the current time using TWIG
 
