@@ -21,7 +21,7 @@ We need to add links to CSS files in the [template](./code/src/Views/main.twig):
 <html>
     <head>
         <title>{{ title }}</title>
-        <link rel="stylesheet" href="/path/to/your/styles.css">
+        <link rel="stylesheet" href="/css/styles.css">
     </head>
     <body>
         {% include content_template_name %}
