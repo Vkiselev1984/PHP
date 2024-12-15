@@ -1,0 +1,29 @@
+body {
+    padding-left: calc(50% - 570px);
+    padding-right: calc(50% - 570px);
+    margin: 0 auto;
+    background: #001347;
+    color: white;
+    font-size: x-large;
+}
+
+li {
+    list-style: none;
+}
+
+a {
+    text-decoration: none;
+    color: white;
+}
+
+header,
+main {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 10px;
+}
+
+.navigation {
+    display: flex;
+    justify-content: space-between;
+}
