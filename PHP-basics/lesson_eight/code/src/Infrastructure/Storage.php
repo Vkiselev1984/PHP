@@ -30,13 +30,12 @@ class Storage
     {
         $tables = [];
 
-        // Убедитесь, что вы используете нужную базу данных
-        $this->connection->exec("USE your_database_name"); // Замените на имя вашей базы данных
+        $this->connection->exec("Application1");
 
         $query = $this->connection->query("SHOW TABLES;");
 
         while ($row = $query->fetch(PDO::FETCH_NUM)) {
-            $tables[] = $row[0]; // Имя таблицы будет в первом элементе массива
+            $tables[] = $row[0];
         }
 
         return $tables;

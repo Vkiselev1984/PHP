@@ -356,3 +356,262 @@ public static function getPasswordHash($passString)
     return password_hash($passString, PASSWORD_BCRYPT);
 }
 ```
+
+## ValidateRequestData method in User class
+
+### Test
+
+Send invalid data:
+
+- Try calling the method with empty data or data that does not meet the expected requirements.
+  Expected result: the method should return false or an error message.
+
+### Analysis
+
+Check how the method handles empty or invalid data.
+
+### Fix
+
+Add validation for each field:
+
+```php
+public static function validateRequestData(): bool
+{
+if (empty($_POST['name']) || empty($_POST['lastname']) || empty($_POST['login']) || empty($_POST['password'])) {
+return false; // Not all fields are filled in
+}
+
+// Additional checks, such as date format
+if (!preg_match('/^\d{2}-\d{2}-\d{4}$/', $_POST['birthday'])) {
+return false; // Invalid date format
+}
+
+return true; // All checks passed
+}
+```
+
+## GetUserById method in User class
+
+### Testing
+
+Try calling the method with an invalid identifier:
+
+- Try calling the method with a non-existent identifier or a string instead of a number.
+  Expected result: the method should return null or an error message.
+
+### Analysis
+
+Check how the method handles invalid identifiers.
+
+### Fix
+
+Add identifier validation:
+
+```php
+public static function getUserById($id)
+{
+if (!is_numeric($id)) {
+return null;
+}
+
+}
+```
+
+## ValidateUserData method in User class
+
+### Test
+
+- Try calling the method with invalid data:
+  Try calling the method with empty strings or data that does not meet the expected requirements.
+  Expected result: the method should return false or an error message.
+
+### Analysis
+
+Check how the method handles empty or invalid data.
+
+### Fix
+
+Add validation for each field:
+
+```php
+public static function validateUserData($data): bool
+{
+if (empty($data['name']) || empty($data['lastname']) || empty($data['login']) || empty($data['password'])) {
+return false;
+}
+
+if (!preg_match('/^\d{2}-\d{2}-\d{4}$/', $data['birthday'])) {
+return false;
+}
+
+return true;
+}
+```
+
+## GetUserRole method in User class
+
+### Testing
+
+Try calling the method with an invalid identifier:
+
+- Try calling the method with a non-existent identifier or a string instead of a number.
+  Expected result: the method should return null or an error message.
+
+### Analysis
+
+Check how the method handles invalid identifiers.
+
+### Fix
+
+Add identifier validation:
+
+```php
+public static function getUserRole($id)
+{
+if (!is_numeric($id)) {
+return null;
+}
+
+}
+```
+
+## RegisterUser method in Auth class
+
+### Testing
+
+Try registering a user with incorrect data:
+
+- Try calling the method with empty strings for login, password, and other required fields.
+  Expected result: the method should return an error or a message that the data is incorrect.
+
+### Analysis
+
+Check how the method handles empty data.
+
+### Fix
+
+Add validation before registration:
+
+```php
+public function registerUser($login, $password, $email)
+{
+if (empty($login) || empty($password) || empty($email)) {
+throw new \Exception("Login, password, and email cannot be empty");
+}
+
+}
+```
+
+## GetUserByEmail method in User class
+
+### Testing
+
+Try calling the method with an incorrect email:
+
+- Try calling the method with an empty string or a non-existent email.
+  Expected result: the method should return null or an error message.
+
+### Analysis
+
+Check how the method handles invalid emails.
+
+### Fix
+
+Add email validation:
+
+```php
+public static function getUserByEmail($email)
+{
+if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+return null;
+}
+
+}
+```
+
+## SendPasswordResetLink method in the Auth class
+
+### Testing
+
+Try sending a password reset link with an invalid email:
+
+- Try calling the method with an empty string or a non-existent email.
+  Expected result: the method should return an error or a message that the email is invalid.
+
+### Analysis
+
+Check how the method handles invalid emails.
+
+### Fix
+
+Add email validation:
+
+```php
+public function sendPasswordResetLink($email)
+{
+if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+throw new \Exception("Invalid email for password reset");
+}
+
+}
+```
+
+## VerifyUser method in the Auth class
+
+### Testing
+
+Try to verify the user with invalid data:
+
+- Try to call the method with empty strings for the login and password.
+  Expected result: the method should return an error or a message that the data is incorrect.
+
+### Analysis
+
+Check how the method handles empty data.
+
+### Fix
+
+Add validation before user verification:
+
+```php
+public function verifyUser($login, $password)
+{
+if (empty($login) || empty($password)) {
+throw new \Exception("Login and password cannot be empty");
+}
+
+}
+```
+
+## Construct класса Config
+
+To add handling of invalid data and improve its robustness. We will add validation to check the existence and readability of the configuration file, as well as handling possible errors when parsing the file.
+
+### Fix
+
+```php
+public function __construct()
+{
+$address = $_SERVER['DOCUMENT_ROOT'] . '/' . $this->defaultConfigFile;
+var_dump($address);
+
+if (!file_exists($address)) {
+throw new \Exception("Configuration file not found: " . $address);
+}
+
+if (!is_readable($address)) {
+throw new \Exception("Configuration file not available for reading: " . $address);
+}
+
+$parsedConfig = parse_ini_file($address, true);
+if ($parsedConfig === false) {
+throw new \Exception("Error parsing configuration file: " . $address);
+}
+
+$this->applicationConfiguration = $parsedConfig;
+}
+```
+
+- Checking if a file exists: If the file does not exist, an exception is thrown with the appropriate message.
+- Checking if a file is readable: If the file exists but is not readable, an exception is thrown.
+- Checking if the parsing result is true: If parse_ini_file returns false, it means that there was an error while parsing and an exception is thrown.
