@@ -24,26 +24,43 @@ class UserController extends AbstractController
     public function actionIndex(): string
     {
         $users = User::getAllUsersFromStorage();
-
-        if (!$users) {
+        if (!isset($_SESSION['id_user'])) {
             return $this->render->renderPage(
                 'user-empty.twig',
                 [
                     'title' => 'List of users in storage',
-                    'message' => "List is empty or not found"
+                    'message' => "User not authenticated",
+                    'isAdmin' => false
                 ]
             );
         }
+
+        $userId = $_SESSION['id_user'];
+        $user = User::getUserById($userId);
+
+        // Проверка на существование пользователя
+        if ($user === null) {
+            return $this->render->renderPage(
+                'user-empty.twig',
+                [
+                    'title' => 'List of users in storage',
+                    'message' => "User not found",
+                    'isAdmin' => false
+                ]
+            );
+        }
+
+        $isAdmin = in_array('admin', $user->getUserRoles($userId));
 
         return $this->render->renderPage(
             'user-index.twig',
             [
                 'title' => 'List of users in storage',
-                'users' => $users
+                'users' => $users,
+                'isAdmin' => $isAdmin
             ]
         );
     }
-
     public function actionIndexRefresh()
     {
         $limit = $_POST['maxId'] ?? null;
@@ -62,13 +79,31 @@ class UserController extends AbstractController
 
     public function actionSave(): string
     {
-        if (User::validateRequestData()) {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if ($_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+                return json_encode(['success' => false, 'message' => 'Неверный CSRF-токен']);
+            }
+
+            $name = $_POST['name'] ?? '';
+            $lastname = $_POST['lastname'] ?? '';
+            $login = $_POST['login'] ?? '';
+            $password = $_POST['password'] ?? '';
+            $birthday = $_POST['birthday'] ?? '';
+
+            if (User::getUserByLogin($login)) {
+                return json_encode(['success' => false, 'message' => 'Пользователь с таким логином уже существует.']);
+            }
+
+            $passwordHash = password_hash($password, PASSWORD_BCRYPT);
+
             $user = new User();
-            $user->setParamsFromRequestData(); // Установить параметры из POST данных
-            $user->saveToStorage(); // Сохранить данные в хранилище
-            return json_encode(['success' => true]);
+            $user->setParamsFromRequestData($name, $lastname, $login, $passwordHash, $birthday);
+            $user->saveToStorage();
+
+            return json_encode(['success' => true, 'message' => 'Пользователь успешно зарегистрирован!']);
         }
-        return json_encode(['success' => false, 'message' => 'Ошибка валидации данных']);
+
+        return json_encode(['success' => false, 'message' => 'Неверный метод запроса.']);
     }
 
     public function actionDelete(int $userId): string
@@ -81,8 +116,13 @@ class UserController extends AbstractController
     {
         $user = User::getUserById($userId);
         if ($user) {
-            $user->setParamsFromRequestData(); // Установить параметры из POST данных
-            $user->updateInStorage(); // Обновить данные в хранилище
+            $name = $_POST['name'] ?? '';
+            $lastname = $_POST['lastname'] ?? '';
+            $login = $_POST['login'] ?? '';
+            $passwordHash = $_POST['passwordHash'] ?? '';
+            $birthday = $_POST['birthday'] ?? '';
+            $user->setParamsFromRequestData($name, $lastname, $login, $passwordHash, $birthday);
+            $user->updateInStorage();
             return json_encode(['success' => true]);
         }
         return json_encode(['success' => false, 'message' => 'Пользователь не найден']);
@@ -114,6 +154,45 @@ class UserController extends AbstractController
         return Auth::getPasswordHash($_GET['pass_string']);
     }
 
+    public function actionRegister(): string
+    {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $name = $_POST['name'] ?? '';
+            $lastname = $_POST['lastname'] ?? '';
+            $login = $_POST['login'] ?? '';
+            $password = $_POST['password'] ?? '';
+
+            if (User::getUserByLogin($login)) {
+                return $this->render->renderPageWithForm(
+                    'user-register.twig',
+                    [
+                        'title' => 'Registration',
+                        'error' => 'Пользователь с таким логином уже существует.'
+                    ]
+                );
+            }
+
+            $passwordHash = password_hash($password, PASSWORD_BCRYPT);
+
+            User::createUser($name, $lastname, $login, $passwordHash);
+
+            return $this->render->renderPage(
+                'user-success.twig',
+                [
+                    'title' => 'Registration Successful',
+                    'message' => 'Вы успешно зарегистрированы!'
+                ]
+            );
+        }
+
+        return $this->render->renderPageWithForm(
+            'user-register.twig',
+            [
+                'title' => 'Registration'
+            ]
+        );
+    }
+
     public function actionLogin(): string
     {
         error_log("actionLogin called");
@@ -123,13 +202,16 @@ class UserController extends AbstractController
         if (isset($_POST['login']) && isset($_POST['password'])) {
             error_log("Login attempt: " . $_POST['login']);
 
-            // Отладочное сообщение для отображения пароля (не рекомендуется в реальных приложениях)
-            // error_log("Password attempt: " . $_POST['password']); // Не выводите пароль в лог!
+            // Не выводите пароль в лог!
+            // error_log("Password attempt: " . $_POST['password']); 
 
             $result = Application::$auth->proceedAuth($_POST['login'], $_POST['password']);
 
             if ($result) {
                 error_log("Authentication successful for user: " . $_POST['login']);
+                if (is_array($result) && isset($result[0]['password_hash'])) {
+                    error_log("Stored password hash: " . $result[0]['password_hash']);
+                }
             } else {
                 error_log("Authentication failed for user: " . $_POST['login']);
             }

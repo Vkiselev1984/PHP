@@ -6,6 +6,8 @@ use Geekbrains\Application1\Application\Application;
 use Geekbrains\Application1\Infrastructure\Storage;
 use Geekbrains\Application1\Application\Auth;
 
+use PDO;
+
 class User
 {
 
@@ -57,6 +59,29 @@ class User
     public function getUserId(): ?int
     {
         return $this->userId;
+    }
+
+    public static function getUserByLogin(string $login): ?array
+    {
+        // SQL-запрос для получения пользователя по логину
+        $sql = "SELECT * FROM users WHERE login = :login";
+        $handler = Application::$storage->get()->prepare($sql);
+        $handler->execute(['login' => $login]);
+
+        return $handler->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public static function createUser(string $name, string $lastname, string $login, string $passwordHash): void
+    {
+        // SQL-запрос для создания нового пользователя
+        $sql = "INSERT INTO users (name, lastname, login, password_hash) VALUES (:name, :lastname, :login, :password_hash)";
+        $handler = Application::$storage->get()->prepare($sql);
+        $handler->execute([
+            'name' => $name,
+            'lastname' => $lastname,
+            'login' => $login,
+            'password_hash' => $passwordHash
+        ]);
     }
 
 
@@ -114,16 +139,25 @@ class User
         return $result;
     }
 
-
-
-
-    public function setParamsFromRequestData(): void
+    public function getUserRoles(int $userId): array
     {
-        $this->userName = $_POST['name'];
-        $this->userLastName = $_POST['lastname'];
-        $this->setBirthdayFromString($_POST['birthday']);
+        $sql = "SELECT role FROM user_roles WHERE user_id = :user_id";
+        $handler = Application::$storage->get()->prepare($sql);
+        $handler->execute(['user_id' => $userId]);
+        $roles = $handler->fetchAll(PDO::FETCH_COLUMN);
+
+        return $roles ?: [];
     }
 
+
+    public function setParamsFromRequestData(string $name, string $lastname, string $login, string $passwordHash, string $birthday): void
+    {
+        $this->userName = $name;
+        $this->userLastName = $lastname;
+        $this->login = $login;
+        $this->passwordHash = $passwordHash;
+        $this->setBirthdayFromString($birthday);
+    }
 
     public function saveToStorage()
     {
