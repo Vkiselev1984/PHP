@@ -9,6 +9,7 @@ use Geekbrains\Application1\Application\Auth;
 
 class Application
 {
+
     private const APP_NAMESPACE = 'Geekbrains\Application1\Domain\Controllers\\';
 
     private string $controllerName;
@@ -20,32 +21,6 @@ class Application
 
     public function __construct()
     {
-        ini_set('session.save_handler', 'files');
-        ini_set('session.save_path', '/tmp');
-        ini_set('display_errors', 1);
-        ini_set('display_startup_errors', 1);
-        error_reporting(E_ALL);
-
-        try {
-            session_start();
-        } catch (\Exception $e) {
-            die("Ошибка при запуске сессии: " . $e->getMessage());
-        }
-
-        // Проверка наличия класса Memcached
-        if (!class_exists('Memcached')) {
-            die('Класс Memcached не доступен. Убедитесь, что расширение установлено.');
-        }
-
-        $memcached = new \Memcached();
-        $memcached->addServer('172.20.0.1', 11211);
-
-        if ($memcached->set('test_key', 'test_value')) {
-            echo "Подключение к Memcached успешно!";
-        } else {
-            echo "Ошибка подключения к Memcached: " . $memcached->getResultMessage();
-        }
-
         Application::$config = new Config();
         Application::$storage = new Storage();
         Application::$auth = new Auth();
@@ -53,7 +28,10 @@ class Application
 
     public function run(): string
     {
+        ob_start();
+        session_start();
         $routeArray = explode('/', $_SERVER['REQUEST_URI']);
+        echo "Route array: " . implode(', ', $routeArray) . "\n"; // Отладочное сообщение
 
         if (isset($routeArray[1]) && $routeArray[1] != '') {
             $controllerName = $routeArray[1];
@@ -62,6 +40,7 @@ class Application
         }
 
         $this->controllerName = Application::APP_NAMESPACE . ucfirst($controllerName) . "Controller";
+        echo "Controller name: " . $this->controllerName . "\n"; // Отладочное сообщение
 
         if (class_exists($this->controllerName)) {
             if (isset($routeArray[2]) && $routeArray[2] != '') {
@@ -71,17 +50,21 @@ class Application
             }
 
             $this->methodName = "action" . ucfirst($methodName);
+            echo "Method name: " . $this->methodName . "\n"; // Отладочное сообщение
 
             if (method_exists($this->controllerName, $this->methodName)) {
                 $controllerInstance = new $this->controllerName();
+                echo "Controller instance created.\n"; // Отладочное сообщение
 
                 if ($controllerInstance instanceof AbstractController) {
                     if ($this->checkAccessToMethod($controllerInstance, $this->methodName)) {
+                        echo "Access granted to method: " . $this->methodName . "\n"; // Отладочное сообщение
                         return call_user_func_array(
                             [$controllerInstance, $this->methodName],
                             []
                         );
                     } else {
+                        echo "Access denied to method: " . $this->methodName . "\n"; // Отладочное сообщение
                         return "Нет доступа к методу";
                     }
                 } else {
@@ -91,9 +74,11 @@ class Application
                     );
                 }
             } else {
+                echo "Method does not exist: " . $this->methodName . "\n"; // Отладочное сообщение
                 return "Метод не существует";
             }
         } else {
+            echo "Class does not exist: " . $this->controllerName . "\n"; // Отладочное сообщение
             return "Класс $this->controllerName не существует";
         }
     }
@@ -102,10 +87,11 @@ class Application
     {
         $userRoles = $controllerInstance->getUserRoles();
         $rules = $controllerInstance->getActionsPermissions($methodName);
-        error_log("Пользовательские роли: " . implode(', ', $userRoles));
-        error_log("Правила доступа для метода $methodName: " . implode(', ', $rules));
-
         $isAllowed = false;
+
+        echo "Checking access for method: " . $methodName . "\n"; // Отладочное сообщение
+        echo "User roles: " . implode(', ', $userRoles) . "\n"; // Отладочное сообщение
+        echo "Required permissions: " . implode(', ', $rules) . "\n"; // Отладочное сообщение
 
         if (!empty($rules)) {
             foreach ($rules as $rolePermission) {

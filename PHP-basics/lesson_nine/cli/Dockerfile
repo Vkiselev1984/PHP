@@ -6,8 +6,8 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 
 ENV COMPOSER_ALLOW_SUPERUSER 1
 
-RUN apt-get update && apt-get install -y zip unzip libpq-dev
-RUN docker-php-ext-install pdo_pgsql
+RUN apt-get update && apt-get install zip unzip
+RUN docker-php-ext-install pdo_mysql
 
 WORKDIR /data/mysite.local
 

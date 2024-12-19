@@ -7,37 +7,41 @@ use Twig\Environment;
 
 class Render
 {
-    private string $viewFolder = 'src/Domain/Views/';
+
+    private string $viewFolder = '/src/Domain/Views/';
     private FilesystemLoader $loader;
     private Environment $environment;
 
     public function __construct()
     {
-        $finalPath = $_SERVER['DOCUMENT_ROOT'] . '/' . $this->viewFolder;
-        var_dump($finalPath);
-        $this->loader = new FilesystemLoader($finalPath);
+        $this->loader = new FilesystemLoader($_SERVER['DOCUMENT_ROOT'] . '/../' . $this->viewFolder);
         $this->environment = new Environment($this->loader, [
-            'cache' => $_SERVER['DOCUMENT_ROOT'] . '/cache/',
+            'cache' => $_SERVER['DOCUMENT_ROOT'] . '/../cache/',
         ]);
+        echo "Render initialized with view folder: " . $this->viewFolder . "\n"; // Отладочное сообщение
     }
-    public function renderPage(string $contentTemplateName = 'page-index.twig', array $templateVariables = []): string
+
+    public function renderPage(string $contentTemplateName = 'page-index.tpl', array $templateVariables = []): string
     {
-        $template = $this->environment->load('main.twig');
+        echo "Rendering page: $contentTemplateName\n"; // Отладочное сообщение
+        $template = $this->environment->load('main.tpl');
 
         $templateVariables['content_template_name'] = $contentTemplateName;
 
         if (isset($_SESSION['user_name'])) {
             $templateVariables['user_authorized'] = true;
+            echo "User is authorized: " . $_SESSION['user_name'] . "\n"; // Отладочное сообщение
+        } else {
+            echo "User is not authorized.\n"; // Отладочное сообщение
         }
 
         return $template->render($templateVariables);
     }
 
-
-
-    public function renderPageWithForm(string $contentTemplateName = 'page-index.twig', array $templateVariables = []): string
+    public function renderPageWithForm(string $contentTemplateName = 'page-index.tpl', array $templateVariables = []): string
     {
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        echo "Generated CSRF token: " . $_SESSION['csrf_token'] . "\n"; // Отладочное сообщение
 
         $templateVariables['csrf_token'] = $_SESSION['csrf_token'];
 
@@ -46,18 +50,16 @@ class Render
 
     public function renderPartial(string $contentTemplateName, array $templateVariables = []): string
     {
+        echo "Rendering partial: $contentTemplateName\n"; // Отладочное сообщение
         $template = $this->environment->load($contentTemplateName);
 
         if (isset($_SESSION['user_name'])) {
             $templateVariables['user_authorized'] = true;
+            echo "User is authorized: " . $_SESSION['user_name'] . "\n"; // Отладочное сообщение
+        } else {
+            echo "User is not authorized.\n"; // Отладочное сообщение
         }
 
         return $template->render($templateVariables);
-    }
-
-    public function renderExceptionPage(string $errorMessage): string
-    {
-        $templateVariables = ['error_message' => $errorMessage];
-        return $this->environment->load('error.twig')->render($templateVariables);
     }
 }

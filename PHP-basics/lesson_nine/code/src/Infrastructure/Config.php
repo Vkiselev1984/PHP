@@ -2,26 +2,24 @@
 
 namespace Geekbrains\Application1\Infrastructure;
 
-class Config
-{
+class Config {
 
-    private string $defaultConfigFile = "src/config/config.ini";
+    private string $defaultConfigFile = "/src/config/config.ini";
 
     private array $applicationConfiguration = [];
 
-    public function __construct()
-    {
-        $address = $_SERVER['DOCUMENT_ROOT'] . '/' . $this->defaultConfigFile;
-        var_dump($address);
+    public function __construct(){
+        $address = $_SERVER['DOCUMENT_ROOT'] . '/../' . $this->defaultConfigFile;
 
-        if (file_exists($address) && is_readable($address)) {
+        if(file_exists($address) && is_readable($address)){
             $this->applicationConfiguration = parse_ini_file($address, true);
-        } else {
-            throw new \Exception("Файл конфигурации не найден: " . $address);
+        }
+        else {
+            throw new \Exception("Файл конфигурации не найден");
         }
     }
-    public function get(): array
-    {
+
+    public function get(): array {
         return $this->applicationConfiguration;
     }
 }

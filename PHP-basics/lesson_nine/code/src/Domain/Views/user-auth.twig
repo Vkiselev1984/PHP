@@ -1,17 +1,21 @@
-{% if not auth-success %}
-  {{ auth-error }}
+{% if auth-error is not empty %}
+    <div class="alert alert-danger" role="alert">
+        {{ auth-error }}
+    </div>
 {% endif %}
-
-
-<form action="/user/login/" method="post">
-  <input id="csrf_token" type="hidden" name="csrf_token" value="{{ csrf_token }}">
-  <p>
-    <label for="user-login">Логин:</label>
-    <input id="user-login" type="text" name="login">
-  </p>
-  <p>
-    <label for="user-password">Пароль:</label>
-    <input id="user-password" type="password" name="password">
-  </p>
-  <p><input type="submit" value="Войти"></p>
+{% if auth-success %}
+    <div class="alert alert-success" role="alert">
+        Успешная аутентификация!
+    </div>
+{% endif %}
+<form method="post" action="/user/login">
+    <div class="mb-3">
+        <label for="login" class="form-label">Логин</label>
+        <input type="text" class="form-control" id="login" name="login" required>
+    </div>
+    <div class="mb-3">
+        <label for="password" class="form-label">Пароль</label>
+        <input type="password" class="form-control" id="password" name="password" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Войти</button>
 </form>

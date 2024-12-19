@@ -11,30 +11,29 @@ class Auth
 
     public function proceedAuth(string $login, string $password): bool
     {
-        echo "Starting the authorization process for the user: $login\n";
+        echo "Attempting to authenticate user: $login\n"; // Отладочное сообщение
 
-        $sql = "SELECT id_user, name, lastname, password_hash FROM users WHERE login = :login";
+        $sql = "SELECT id_user, user_name, user_lastname, password_hash FROM users WHERE login = :login";
         $handler = Application::$storage->get()->prepare($sql);
         $handler->execute(['login' => $login]);
         $result = $handler->fetchAll();
-        var_dump($result);
 
         if (!empty($result)) {
-            echo "User found. Verifying password...\n";
+            echo "User found: " . $result[0]['user_name'] . " " . $result[0]['user_lastname'] . "\n"; // Отладочное сообщение
             if (password_verify($password, $result[0]['password_hash'])) {
-                echo "Password correct. Authorization successful.\n";
-                $_SESSION['name'] = $result[0]['name'];
-                $_SESSION['lastname'] = $result[0]['lastname'];
+                echo "Password verification successful.\n"; // Отладочное сообщение
+                $_SESSION['user_name'] = $result[0]['user_name'];
+                $_SESSION['user_lastname'] = $result[0]['user_lastname'];
                 $_SESSION['id_user'] = $result[0]['id_user'];
 
                 return true;
             } else {
-                echo "Password is incorrect.\n";
+                echo "Password verification failed.\n"; // Отладочное сообщение
+                return false;
             }
         } else {
-            echo "User not found.\n";
+            echo "No user found with login: $login\n"; // Отладочное сообщение
+            return false;
         }
-
-        return false;
     }
 }
