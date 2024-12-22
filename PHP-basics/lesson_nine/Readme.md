@@ -1,177 +1,135 @@
+# Improving the application
+
+## Task
+
 Adjust the list of users so that all users with administrator rights in the table see two additional links - editing and deleting a user. In this case, editing will go to the form, and deleting in asynchronous mode will delete the user from both the table and the database.
 
-To add the functionality to edit and delete users for admins, you'll need to make changes to the actionIndex method of your UserController, as well as the template that displays the list of users.
-Steps to implement Change the actionIndex method: You'll need to pass information about whether the current user is an admin to the template.
+## Solution
 
-Template change: In the template that displays the list of users, add links to edit and delete users if the current user has admin rights.
+To make the requested changes, we'll fix the part of the code that handles user roles and permissions. Specifically, we'll add logic to check if the user has admin rights, and if so, provide them with additional links to edit and delete users.
 
-Create an asynchronous delete: Implement JavaScript to handle deleting a user without reloading the page.
-
-Example changes
-
-1. Change the actionIndex method
-   In the actionIndex method, add a check for admin rights and pass that information to the template:
-
-```php
-public function actionIndex(): string
-{
-$users = User::getAllUsersFromStorage();
-$isAdmin = in_array('admin', Application::$auth->getUserRoles()); // Assumes you have a method to get user roles
-
-if (!$users) {
-return $this->render->renderPage(
-'user-empty.twig',
-[
-'title' => 'List of users in storage',
-'message' => "List is empty or not found",
-'isAdmin' => $isAdmin
-]
-);
-}
-
-return $this->render->renderPage(
-'user-index.twig',
-[
-'title' => 'List of users in storage',
-'users' => $users,
-'isAdmin' => $isAdmin
-]
-);
-}
-```
-
-2. Modify the user-index.twig template
-
-In the template, add links to edit and delete users if the current user is an administrator:
-
-```twig
-{% for user in users %}
-<tr>
-<td>{{ user.name }}</td>
-<td>{{ user.lastname }}</td>
-<td>
-{% if isAdmin %}
-<a href="/user/edit/{{ user.id_user }}">Edit</a>
-<button class="delete-user" data-user-id="{{ user.id_user }}">Delete</button>
-{% endif %}
-</td>
-</tr>
-{% endfor %}
-```
-
-3. Asynchronously delete a user
-   Add JavaScript to handle deleting a user:
+Let's change the checkAccessToMethod function to include logic for admins.
+Let's make sure that if the user has admin rights, they'll see links to edit and delete users.
 
 ```javascript
+private function checkAccessToMethod(AbstractController $controllerInstance, string $methodName): bool
+{
+    $userRoles = $controllerInstance->getUserRoles();
+    $rules = $controllerInstance->getActionsPermissions($methodName);
+    $isAllowed = false;
+
+    echo "Проверка доступа к методу: " . $methodName . "\n";
+    echo "Роли пользователя: " . implode(', ', $userRoles) . "\n";
+    echo "Необходимые разрешения: " . implode(', ', $rules) . "\n";
+
+    if (in_array('admin', $userRoles)) {
+        if (in_array($methodName, ['actionEditUser', 'actionDeleteUser'])) {
+            return true;
+        }
+    }
+
+    if (!empty($rules)) {
+        foreach ($rules as $rolePermission) {
+            if (in_array($rolePermission, $userRoles)) {
+                $isAllowed = true;
+                break;
+            }
+        }
+    } else {
+        $isAllowed = true;
+    }
+
+    return $isAllowed;
+}
+```
+
+Let's add two new columns to the table in the HTML code that displays the list of users: one for editing and one for deleting, and implement the deletion function via AJAX.
+
+```html
+<p>Список пользователей в хранилище</p>
+
+<div class="table-responsive small">
+  <table class="table table-striped table-sm">
+    <thead>
+      <tr>
+        <th scope="col">ID</th>
+        <th scope="col">Имя</th>
+        <th scope="col">Фамилия</th>
+        <th scope="col">День рождения</th>
+        <th scope="col">Действия</th>
+        <!-- Новый заголовок для действий -->
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in users %}
+      <tr>
+        <td>{{ user.getUserId() }}</td>
+        <td>{{ user.getUserName() }}</td>
+        <td>{{ user.getUserLastName() }}</td>
+        <td>
+          {% if user.getUserBirthday() is not empty %} {{ user.getUserBirthday()
+          | date('d.m.Y') }} {% else %}
+          <b>Не задан</b>
+          {% endif %}
+        </td>
+        <td>
+          <a href="edit_user.php?id={{ user.getUserId() }}">Редактировать</a> |
+          <a href="#" onclick="deleteUser({{ user.getUserId() }})">Удалить</a>
+        </td>
+        <!-- Ссылки для редактирования и удаления -->
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-const deleteButtons = document.querySelectorAll('.delete-user');
+  let maxId = $(".table-responsive tbody tr:last-child td:first-child").html();
 
- deleteButtons.forEach(button => {
- button.addEventListener('click', function() {
- const userId = this.getAttribute('data-user-id');
+  setInterval(function () {
+    $.ajax({
+      method: "POST",
+      url: "/user/indexRefresh/",
+      data: { maxId: maxId },
+    }).done(function (response) {
+      let users = $.parseJSON(response);
 
- if (confirm('Are you sure you want to delete this user?')) {
- fetch(`/user/delete/${userId}`, {
- method: 'DELETE'
- })
- .then(response => response.json())
- .then(data => {
- if (data.success) {
- // Delete a row from the table
- this.closest('tr').remove();
- } else {
- alert(data.message);
- }
- })
- .catch(error => console.error('Error:', error));
- }
- });
- });
-});
+      if (users.length != 0) {
+        for (var k in users) {
+          let row = "<tr>";
+          row += "<td>" + users[k].id + "</td>";
+          maxId = users[k].id;
+          row += "<td>" + users[k].username + "</td>";
+          row += "<td>" + users[k].userlastname + "</td>";
+          row += "<td>" + users[k].userbirthday + "</td>";
+          row +=
+            "<td><a href='edit_user.php?id=" +
+            users[k].id +
+            "'>Редактировать</a> | <a href='#' onclick='deleteUser(" +
+            users[k].id +
+            ")'>Удалить</a></td>";
+          row += "</tr>";
+
+          $(".content-template tbody").append(row);
+        }
+      }
+    });
+  }, 10000);
+
+  function deleteUser(userId) {
+    if (confirm("Вы уверены, что хотите удалить пользователя?")) {
+      $.ajax({
+        method: "DELETE",
+        url: "delete_user.php?id=" + userId,
+      }).done(function (response) {
+        if (response.success) {
+          alert("Пользователь удален.");
+          location.reload(); // Перезагружаем страницу после удаления
+        } else {
+          alert("Ошибка при удалении пользователя.");
+        }
+      });
+    }
+  }
 </script>
-```
-
-This code listens for clicks on delete buttons and sends a DELETE request to the server when the user confirms the deletion. The response from the server is then processed to either remove the user from the table or display an error message.
-
-4. Implement the delete action in the UserController
-   In the UserController, implement the delete action to handle the DELETE request:
-
-```php
-public function actionDelete(int $id_user): string
-{
-if (!$this->isAdmin()) {
-return $this->render->renderPage(
-'user-empty.twig',
-[
-'title' => 'List of users in storage',
-'message' => "You don't have permission to delete users",
-]
-);
-}
-
-if ($this->deleteUserFromStorage($id_user)) {
-return $this->render->renderPage(
-'user-empty.twig',
-[
-'title' => 'List of users in storage',
-'message' => "User with ID {$id_user
-} has been deleted",
-]
-);
-} else {
-return $this->render->renderPage(
-'user-empty.twig',
-[
-'title' => 'List of users in storage',
-'message' => "User with ID {$id_user} not found",
-
-]
-);
-}
-}
-```
-
-This code checks if the user is an admin and then deletes the user from the storage. If the user is not found, it displays an error message.
-
-5. Implement the delete method in the User class
-   In the User class, implement the deleteUserFromStorage method to delete the user from the storage:
-
-```php
-public function deleteUserFromStorage(): bool
-{
-// Implement the logic to delete the user from the storage
-}
-```
-
-This method should delete the user from the storage, such as removing it from an array or database table.
-
-6. Test the functionality
-
-Test the functionality by creating some users, logging in as an admin, and verifying that the edit and delete links appear for users with admin rights.
-
-7. In the User class, add the getUserRoles method:
-
-```php
-public function getUserRoles(int $userId): array
-{
-    $sql = "SELECT role FROM user_roles WHERE user_id = :user_id";
-    $handler = Application::$storage->get()->prepare($sql);
-    $handler->execute(['user_id' => $userId]);
-    $roles = $handler->fetchAll(PDO::FETCH_COLUMN);
-
-    return $roles ?: [];
-}
-```
-
-Now you can use this method in your UserController to get the roles of the current user:
-
-```php
-public function actionIndex(): string
-{
-    $users = User::getAllUsersFromStorage();
-    $userId = $_SESSION['id_user'];
-    $user = User::getUserById($userId);
-    $isAdmin = in_array('admin', $user->getUserRoles($userId));
-}
 ```

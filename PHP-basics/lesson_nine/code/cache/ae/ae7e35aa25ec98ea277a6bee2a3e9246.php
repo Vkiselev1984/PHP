@@ -42,7 +42,7 @@ class __TwigTemplate_2b65541e421a6a3ccee6d86107da3082 extends Template
 ";
         } else {
             // line 6
-            echo "    <p>Добро пожаловать на сайт!</p>
+            echo "    <p><a href=\"/logout\" class=\"btn btn-primary\">Logout</a></p>
 ";
         }
     }

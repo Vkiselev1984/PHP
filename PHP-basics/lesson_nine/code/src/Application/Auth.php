@@ -11,7 +11,7 @@ class Auth
 
     public function proceedAuth(string $login, string $password): bool
     {
-        echo "Attempting to authenticate user: $login\n"; // Отладочное сообщение
+        echo "Attempting to authenticate user: $login\n";
 
         $sql = "SELECT id_user, user_name, user_lastname, password_hash FROM users WHERE login = :login";
         $handler = Application::$storage->get()->prepare($sql);
@@ -19,20 +19,20 @@ class Auth
         $result = $handler->fetchAll();
 
         if (!empty($result)) {
-            echo "User found: " . $result[0]['user_name'] . " " . $result[0]['user_lastname'] . "\n"; // Отладочное сообщение
+            echo "User found: " . $result[0]['user_name'] . " " . $result[0]['user_lastname'] . "\n";
             if (password_verify($password, $result[0]['password_hash'])) {
-                echo "Password verification successful.\n"; // Отладочное сообщение
+                echo "Password verification successful.\n";
                 $_SESSION['user_name'] = $result[0]['user_name'];
                 $_SESSION['user_lastname'] = $result[0]['user_lastname'];
                 $_SESSION['id_user'] = $result[0]['id_user'];
 
                 return true;
             } else {
-                echo "Password verification failed.\n"; // Отладочное сообщение
+                echo "Password verification failed.\n";
                 return false;
             }
         } else {
-            echo "No user found with login: $login\n"; // Отладочное сообщение
+            echo "No user found with login: $login\n";
             return false;
         }
     }
