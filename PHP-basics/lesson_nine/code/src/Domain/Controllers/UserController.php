@@ -21,6 +21,7 @@ class UserController extends AbstractController
     {
         $users = User::getAllUsersFromStorage();
         $userRoles = $this->getUserRoles(); // Получаем роли пользователя
+        $csrfToken = $this->generateCsrfToken(); // Генерация CSRF-токена
 
         $render = new Render();
 
@@ -38,7 +39,9 @@ class UserController extends AbstractController
                 [
                     'title' => 'Список пользователей в хранилище',
                     'users' => $users,
-                    'userRoles' => $userRoles // Передаем роли в шаблон
+                    'userRoles' => $userRoles, // Передаем роли в шаблон
+                    'user_authorized' => isset($_SESSION['user_name']), // Передаем информацию о авторизации
+                    'csrf_token' => $csrfToken // Передаем CSRF-токен
                 ]
             );
         }
@@ -52,25 +55,48 @@ class UserController extends AbstractController
             $limit = $_POST['maxId'];
         }
 
-        $users = User::getAllUsersFromStorage($limit);
-        $usersData = [];
+        try {
+            $users = User::getAllUsersFromStorage($limit);
+            error_log("Полученные пользователи: " . print_r($users, true)); // Отладочный вывод
+            $usersData = [];
 
-        if (count($users) > 0) {
-            foreach ($users as $user) {
-                $usersData[] = $user->getUserDataAsArray();
+            if (count($users) > 0) {
+                foreach ($users as $user) {
+                    $userData = $user->getUserDataAsArray();
+                    if (is_array($userData)) {
+                        $usersData[] = $userData;
+                    } else {
+                        error_log("Ошибка: getUserDataAsArray не вернул массив для пользователя с ID: " . $user->getUserId());
+                    }
+                }
             }
+
+            $response = [
+                'success' => true,
+                'data' => $usersData,
+            ];
+        } catch (\Exception $e) {
+            error_log("Ошибка при получении пользователей: " . $e->getMessage());
+
+            $response = [
+                'success' => false,
+                'error' => 'Не удалось получить данные пользователей.',
+            ];
         }
 
-        $response = [
-            'success' => true,
-            'data' => $usersData,
-        ];
+        // Проверка перед кодированием в JSON
+        if (!is_array($response)) {
+            error_log("Ошибка: Ответ не является массивом перед json_encode.");
+            $response = [
+                'success' => false,
+                'error' => 'Неверный формат ответа.',
+            ];
+        }
 
         header('Content-Type: application/json');
         echo json_encode($response);
         exit;
     }
-
     public function actionSave(): string
     {
         if (User::validateRequestData()) {
@@ -104,15 +130,16 @@ class UserController extends AbstractController
         );
     }
 
-
     public function actionAuth(): string
     {
         $render = new Render();
+        $csrfToken = $this->generateCsrfToken(); // Генерация CSRF-токена
 
         return $render->renderPageWithForm(
             'user-auth.tpl',
             [
-                'title' => 'Форма логина'
+                'title' => 'Форма логина',
+                'csrf_token' => $csrfToken, // Передаем CSRF-токен
             ]
         );
     }
@@ -178,23 +205,30 @@ class UserController extends AbstractController
 
     public function actionDeleteUser(): string
     {
+        // Проверка CSRF-токена
+        if (!isset($_POST['csrf_token']) || !$this->isCsrfTokenValid($_POST['csrf_token'])) {
+            return json_encode(['success' => false, 'message' => 'Недействительный CSRF-токен.']);
+        }
+
         try {
             $userId = $_POST['id'] ?? null;
 
             if ($userId === null) {
-                return json_encode(['success' => false, 'message' => 'User ID is required.']);
+                return json_encode(['success' => false, 'message' => 'ID пользователя не указан.']);
             }
 
             $user = User::getUserById($userId);
 
             if ($user === null) {
-                return json_encode(['success' => false, 'message' => 'User not found.']);
+                return json_encode(['success' => false, 'message' => 'Пользователь не найден.']);
             }
 
             $user->deleteFromStorage();
-            return json_encode(['success' => true]);
+
+            // Возвращаем успешный ответ
+            return json_encode(['success' => true, 'message' => 'Пользователь успешно удален.']);
         } catch (\Exception $e) {
-            return json_encode(['success' => false, 'message' => $e->getMessage()]);
+            return json_encode(['success' => false, 'message' => 'Ошибка удаления: ' . $e->getMessage()]);
         }
     }
 
@@ -214,69 +248,71 @@ class UserController extends AbstractController
     public function actionEditUser(): string
     {
         $userId = $_GET['id'] ?? null;
+
         if ($userId === null) {
             throw new \Exception("ID пользователя не указан.");
         }
+
+        $user = User::getUserById($userId);
+        if ($user === null) {
+            throw new \Exception("Пользователь не найден.");
+        }
+
+        // Генерация CSRF-токена для формы
+        $csrfToken = $this->generateCsrfToken();
 
         $render = new Render();
         return $render->renderPageWithForm(
             'user-update.tpl',
             [
                 'title' => 'Форма редактирования пользователя',
-                'userId' => $userId, // Передаем только ID пользователя
-                'name' => '', // Пустое поле для имени
-                'lastname' => '', // Пустое поле для фамилии
-                'login' => '', // Пустое поле для логина
-                'birthday' => '', // Пустое поле для дня рождения
-                // Убираем csrf_token
+                'userId' => $userId,
+                'name' => $user->getUserName(),
+                'lastname' => $user->getUserLastName(),
+                'login' => $user->getUserLogin(),
+                'birthday' => date('d-m-Y', $user->getUserBirthday()), // Форматирование даты
+                'csrf_token' => $csrfToken,
             ]
         );
     }
 
+    protected function isCsrfTokenValid($token): bool
+    {
+        return isset($_SESSION['csrf_token']) && $_SESSION['csrf_token'] === $token;
+    }
+
     public function actionUpdateUser(): string
     {
-        // Проверка входных данных
-        if (!User::validateRequestData()) {
-            throw new \Exception("Переданные данные некорректны");
-        }
+        $userId = $_POST['id'] ?? $_GET['id'] ?? null; // Получаем ID пользователя из POST или GET-запроса
+        error_log("Полученный ID пользователя: " . $userId);
+        $csrfToken = $_POST['csrf_token'] ?? null;
 
-        // Получение ID пользователя из POST-запроса
-        $userId = $_POST['id'] ?? null;
+        // Проверка наличия ID пользователя
         if ($userId === null) {
-            return "ID пользователя не указан.";
+            throw new \Exception("ID пользователя не указан.");
         }
 
-        // Загрузка существующего пользователя
+        if ($csrfToken === null) {
+            throw new \Exception("CSRF-токен не указан.");
+        }
+
+        // Проверка CSRF-токена
+        if (!isset($_SESSION['csrf_token']) || $_SESSION['csrf_token'] !== $csrfToken) {
+            throw new \Exception("Неверный CSRF-токен.");
+        }
+        // Обновление пользователя
         $user = User::getUserById($userId);
         if ($user === null) {
-            return "Пользователь не найден.";
+            throw new \Exception("Пользователь не найден.");
         }
 
-        // Установка параметров из запроса
+        // Устанавливаем параметры из данных запроса
         $user->setParamsFromRequestData();
 
-        // Проверка наличия ключа "birthday"
-        $birthday = $_POST['birthday'] ?? null;
-        if ($birthday === null) {
-            // Обработка случая, когда день рождения не был передан
-        }
+        // Сохранение изменений
+        $user->updateInStorage();
 
-        // Сохранение обновленных данных
-        try {
-            $user->updateInStorage(); // Предполагается, что у вас есть метод для обновления
-            $message = "Пользователь " . $user->getUserName() . " " . $user->getUserLastName() . " был обновлен.";
-        } catch (\Exception $e) {
-            return "Ошибка обновления: " . $e->getMessage();
-        }
-
-        // Отображение страницы с сообщением об успешном обновлении
-        $render = new Render();
-        return $render->renderPage(
-            'user-update.tpl',
-            [
-                'title' => 'Пользователь обновлен',
-                'message' => $message
-            ]
-        );
+        // Перенаправление или отображение сообщения об успехе
+        return "Пользователь успешно обновлен.";
     }
 }

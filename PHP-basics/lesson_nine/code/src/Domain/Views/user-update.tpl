@@ -1,17 +1,25 @@
-<form method="POST" action="/user/updateUser">
-    <input type="hidden" name="id" value="<?php echo $userId; ?>">
-    
-    <label for="name">Имя:</label>
-    <input type="text" name="name" id="name" placeholder="Введите имя">
-    
-    <label for="lastname">Фамилия:</label>
-    <input type="text" name="lastname" id="lastname" placeholder="Введите фамилию">
-    
-    <label for="login">Логин:</label>
-    <input type="text" name="login" id="login" placeholder="Введите логин">
-    
-    <label for="birthday">День рождения:</label>
-    <input type="date" name="birthday" id="birthday">
-    
-    <button type="submit">Обновить</button>
+<form action="/user/updateUser/" method="post">
+    <input type="hidden" name="id" value="{{ userId }}">
+    <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
+    <p>
+        <label for="user-name">Имя:</label>
+        <input id="user-name" type="text" name="name" value="{{ name }}">
+    </p>
+    <p>
+        <label for="user-lastname">Фамилия:</label>
+        <input id="user-lastname" type="text" name="lastname" value="{{ lastname }}">
+    </p>
+    <p>
+        <label for="user-login">Логин:</label>
+        <input id="user-login" type="text" name="login" value="{{ login }}">
+    </p>
+    <p>
+        <label for="user-password">Пароль:</label>
+        <input id="user-password" type="text" name="password">
+    </p>
+    <p>
+        <label for="user-birthday">День рождения:</label>
+        <input id="user-birthday" type="text" name="birthday" value="{{ birthday }}" placeholder="ДД-ММ-ГГГГ">
+    </p>
+    <p><input type="submit" value="Сохранить"></p>
 </form>

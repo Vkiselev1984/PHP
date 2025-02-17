@@ -18,46 +18,55 @@ class Render
         $this->environment = new Environment($this->loader, [
             'cache' => $_SERVER['DOCUMENT_ROOT'] . '/../cache/',
         ]);
-        echo "Render initialized with view folder: " . $this->viewFolder . "\n"; // Отладочное сообщение
     }
 
     public function renderPage(string $contentTemplateName = 'page-index.tpl', array $templateVariables = []): string
     {
-        echo "Rendering page: $contentTemplateName\n"; // Отладочное сообщение
-        $template = $this->environment->load('main.tpl');
-
-        $templateVariables['content_template_name'] = $contentTemplateName;
-
-        if (isset($_SESSION['user_name'])) {
-            $templateVariables['user_authorized'] = true;
-            echo "User is authorized: " . $_SESSION['user_name'] . "\n"; // Отладочное сообщение
-        } else {
-            echo "User is not authorized.\n"; // Отладочное сообщение
+        try {
+            $template = $this->environment->load('main.tpl');
+        } catch (\Exception $e) {
+            throw new \Exception("Ошибка загрузки шаблона: " . $e->getMessage());
         }
 
+        $templateVariables['content_template_name'] = $contentTemplateName;
         return $template->render($templateVariables);
+    }
+
+    public function renderExceptionPage(string $errorMessage): string
+    {
+        return $this->renderPage(
+            'error.tpl',
+            [
+                'error_message' => $errorMessage,
+            ]
+        );
     }
 
     public function renderPageWithForm(string $contentTemplateName = 'page-index.tpl', array $templateVariables = []): string
     {
-        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-        echo "Generated CSRF token: " . $_SESSION['csrf_token'] . "\n"; // Отладочное сообщение
-
-        $templateVariables['csrf_token'] = $_SESSION['csrf_token'];
+        $templateVariables['csrf_token'] = $this->generateCsrfToken();
 
         return $this->renderPage($contentTemplateName, $templateVariables);
     }
 
+    private function generateCsrfToken(): string
+    {
+        if (!isset($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        }
+        return $_SESSION['csrf_token'];
+    }
+
     public function renderPartial(string $contentTemplateName, array $templateVariables = []): string
     {
-        echo "Rendering partial: $contentTemplateName\n"; // Отладочное сообщение
-        $template = $this->environment->load($contentTemplateName);
+        try {
+            $template = $this->environment->load($contentTemplateName);
+        } catch (\Exception $e) {
+            throw new \Exception("Ошибка загрузки шаблона: " . $e->getMessage());
+        }
 
         if (isset($_SESSION['user_name'])) {
             $templateVariables['user_authorized'] = true;
-            echo "User is authorized: " . $_SESSION['user_name'] . "\n"; // Отладочное сообщение
-        } else {
-            echo "User is not authorized.\n"; // Отладочное сообщение
         }
 
         return $template->render($templateVariables);

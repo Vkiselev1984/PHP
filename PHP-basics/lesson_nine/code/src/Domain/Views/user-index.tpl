@@ -1,5 +1,9 @@
+{% if user_authorized %}
+    <a href="/user/edit?id={{ user.id }}" class="btn btn-warning">Редактировать</a>
+    <a href="/user/delete?id={{ user.id }}" class="btn btn-danger">Удалить</a>
+{% endif %}
+
 <p>Список пользователей в хранилище</p>
-<h2>Роли пользователя: <?php echo implode(', ', $userRoles); ?></h2>
 <div class="table-responsive small">
     <table class="table table-striped table-sm">
         <thead>
@@ -37,41 +41,13 @@
     </table>
 </div>
 
+<meta name="csrf-token" content="{{ csrf_token }}">
+
 <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 <script>
-    let maxId = $('.table-responsive tbody tr:last-child td:first-child').html();
-  
-    setInterval(function () {
-        $.ajax({
-            method: 'POST',
-            url: "/user/indexRefresh/",
-            data: { maxId: maxId }
-        }).done(function (response) {
-            console.log(response); // Логируем ответ сервера
-            try {
-                let users = $.parseJSON(response);
-                
-                if(users.length != 0){
-                    for(var k in users){
-                        let row = "<tr>";
-                        row += "<td>" + users[k].id + "</td>";
-                        maxId = users[k].id;
-                        row += "<td>" + users[k].username + "</td>";
-                        row += "<td>" + users[k].userlastname + "</td>";
-                        row += "<td>" + (users[k].userbirthday ? users[k].userbirthday : "<b>Не задан</b>") + "</td>";
-                        row += "<td>";
-                        row += "<a href='edit_user.php?id=" + users[k].id + "'>Редактировать</a> | <a href='javascript:void(0);' onclick='deleteUser(" + users[k].id + ")'>Удалить</a>";
-                        row += "</td>";
-                        row += "</tr>";
-
-                        $('.table-responsive tbody').append(row);
-                    }
-                }
-            } catch (e) {
-                console.error('Ошибка парсинга JSON:', e);
-            }
-        });
-    }, 10000);
+    // Получаем CSRF-токен из мета-тега
+    let csrfToken = $('meta[name="csrf-token"]').attr('content');
+    console.log("CSRF Token:", csrfToken);
 
     function deleteUser(userId) {
         console.log("Delete user called with ID:", userId);
@@ -79,49 +55,28 @@
             $.ajax({
                 type: "POST",
                 url: "/user/DeleteUser",
-                data: { id: userId },
+                data: { id: userId, csrf_token: csrfToken }, 
                 success: function(response) {
-                    console.log(response);
-                    // Обновляем список пользователей после удаления
-                    updateUserList();
+                    console.log("Response from server:", response);
+                    if (typeof response === "string") {
+                        try {
+                            response = JSON.parse(response);
+                        } catch (e) {
+                            console.error("Ошибка парсинга JSON:", e);
+                        }
+                    }
+                    if (response.success) {
+                        console.log("Пользователь успешно удален.");
+                        location.reload();
+                    } else {
+                        alert('Ошибка: ' + response.message);
+                    }
                 },
                 error: function(xhr, status, error) {
-                    console.error(error);
-                    alert('Ошибка при удалении пользователя.');
+                    console.error("Ошибка AJAX:", error);
+                    alert('Ошибка при удалении пользователя. Статус: ' + status + ', Ошибка: ' + error);
                 }
             });
         }
-    }
-
-    function updateUserList() {
-        $.ajax({
-            method: 'POST',
-            url: "/user/indexRefresh/",
-            data: { maxId: maxId }
-        }).done(function (response) {
-            console.log(response); // Логируем ответ сервера
-            try {
-                let users = $.parseJSON(response);
-                $('.table-responsive tbody').empty(); // Очищаем текущий список
-                if(users.length != 0){
-                    for(var k in users){
-                        let row = "<tr>";
-                        row += "<td>" + users[k].id + "</td>";
-                        maxId = users[k].id;
-                        row += "<td>" + users[k].username + "</td>";
-                        row += "<td>" + users[k].userlastname + "</td>";
-                        row += "<td>" + (users[k].userbirthday ? users[k].userbirthday : "<b>Не задан</b>") + "</td>";
-                        row += "<td>";
-                        row += "<a href='edit_user.php?id=" + users[k].id + "'>Редактировать</a> | <a href='javascript:void(0);' onclick='deleteUser(" + users[k].id + ")'>Удалить</a>";
-                        row += "</td>";
-                        row += "</tr>";
-
-                        $('.table-responsive tbody').append(row);
-                    }
-                }
-            } catch (e) {
-                console.error('Ошибка парсинга JSON:', e);
-            }
-        });
     }
 </script>

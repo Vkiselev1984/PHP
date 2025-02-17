@@ -1,5 +1,0 @@
-node_modules/
-vendor/
-.env
-code/src/config/config.ini
-db/mysql.sock
